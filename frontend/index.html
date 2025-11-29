@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MP4 Downloader</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: "Segoe UI", sans-serif;
+        background: radial-gradient(circle at top, #1a0006, #0a0003 60%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #fff;
+        padding: 30px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 520px;
+        padding: 35px;
+        background: rgba(255, 60, 90, 0.15);
+        backdrop-filter: blur(18px);
+        border-radius: 22px;
+        border: 1px solid rgba(255, 90, 120, 0.3);
+        box-shadow: 0 0 25px rgba(255, 50, 80, 0.4);
+        animation: fadeIn 1s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 {
+        margin-bottom: 25px;
+        font-size: 28px;
+        text-align: center;
+        text-shadow: 0 0 10px rgba(255, 80, 90, 0.7);
+    }
+
+    input, select {
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 18px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        background: rgba(255,255,255,0.12);
+        color: #fff;
+        backdrop-filter: blur(6px);
+        transition: 0.3s;
+    }
+
+    input::placeholder {
+        color: rgba(255,255,255,0.6);
+    }
+
+    input:focus, select:focus {
+        outline: none;
+        background: rgba(255,255,255,0.18);
+        box-shadow: 0 0 10px rgba(255, 80, 120, 0.6);
+    }
+
+    button {
+        width: 100%;
+        padding: 14px;
+        margin-bottom: 15px;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        color: #fff;
+        background: linear-gradient(125deg, #ff1f40, #ff4b6e);
+        box-shadow: 0 0 12px rgba(255,40,70,0.6);
+        transition: 0.25s;
+    }
+
+    button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 18px rgba(255,60,90,0.9);
+    }
+
+    .progress-container {
+        width: 100%;
+        background: rgba(255,255,255,0.15);
+        border-radius: 10px;
+        height: 20px;
+        margin-top: 12px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: #fff;
+        transition: width 0.3s;
+    }
+
+    pre {
+        background: rgba(255,255,255,0.08);
+        padding: 12px;
+        margin-top: 15px;
+        border-radius: 10px;
+        max-height: 180px;
+        overflow-y: auto;
+        font-size: 13px;
+    }
+
+    /* SUCCESS POPUP */
+    .popup {
+        position: fixed;
+        bottom: 40px;
+        right: 40px;
+        padding: 18px 25px;
+        background: rgba(0, 255, 120, 0.15);
+        color: #00ff9d;
+        border: 1px solid #00ff9d;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 15px #00ff9d80;
+        font-size: 16px;
+        display: none;
+        animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <h2><i class="fa-brands fa-youtube"></i> YT Downloader</h2>
+
+    <input id="url" type="text" placeholder="Enter YouTube URL">
+
+    <button onclick="getInfo()"><i class="fa-solid fa-circle-info"></i> Get Video Info</button>
+    <button onclick="getResolutions()"><i class="fa-solid fa-list"></i> Load Resolutions</button>
+
+    <select id="resSelect">
+        <option value="">Select resolution</option>
+    </select>
+
+    <button onclick="downloadVideo()"><i class="fa-solid fa-download"></i> Download Video</button>
+
+    <div class="progress-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+    <pre id="output"></pre>
+</div>
+
+<div class="popup" id="popupMsg">
+    ✅ Video Downloaded Successfully!
+</div>
+
+<script>
+const API = "http://127.0.0.1:5000";
+
+function show(msg) {
+    document.getElementById("output").textContent = JSON.stringify(msg, null, 2);
+}
+
+function popup() {
+    const box = document.getElementById("popupMsg");
+    box.style.display = "block";
+    setTimeout(() => box.style.display = "none", 3000);
+}
+
+async function getInfo() {
+    const url = document.getElementById("url").value;
+    const res = await fetch(`${API}/video_info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+    show(await res.json());
+}
+
+async function getResolutions() {
+    const url = document.getElementById("url").value;
+    const res = await fetch(`${API}/available_resolutions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+
+    const data = await res.json();
+    show(data);
+
+    const sel = document.getElementById("resSelect");
+    sel.innerHTML = `<option value="">Select resolution</option>`;
+    if (data.all) {
+        data.all.forEach(r => sel.innerHTML += `<option value="${r}">${r}</option>`);
+    }
+}
+
+async function downloadVideo() {
+    const url = document.getElementById("url").value;
+    const reso = document.getElementById("resSelect").value;
+
+    if (!reso) return alert("Select a resolution first!");
+
+    const progressBar = document.getElementById("progressBar");
+    const container = document.querySelector('.progress-container');
+
+    container.style.display = "block";
+    progressBar.style.width = "0%";
+
+    let fake = 0;
+    const anim = setInterval(() => {
+        fake += Math.random() * 10;
+        if (fake >= 95) fake = 95;
+        progressBar.style.width = fake + "%";
+    }, 200);
+
+    const res = await fetch(`${API}/download/${reso}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+
+    const result = await res.json();
+    show(result);
+
+    clearInterval(anim);
+    progressBar.style.width = "100%";
+
+    popup(); // Show success popup
+}
+</script>
+
+</body>
+</html>
