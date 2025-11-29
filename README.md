@@ -17,11 +17,14 @@ Files saved inside the downloads/ folder
 
 
 MP4-video-downloader/
-├── index.html          # Frontend UI
-├── style.css           # Optional styling
-├── script.js           # Sends request to Python backend
-├── downloader.py       # Python backend
-├── downloads/          # Output files
+├── downloads/ # downloaded .mp4 files (created at runtime)
+├── frontend/
+│ ├── index.html # main UI
+│ ├── style.css # optional styles
+│ └── script.js # frontend JS that calls the backend API
+├── backend/
+│ └── downloader.py # Python server script (uses yt-dlp)
+├── .gitignore
 └── README.md
 
 Install yt-dlp:
